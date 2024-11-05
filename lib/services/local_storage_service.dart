@@ -3,6 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class LocalStorageService {
   Future<void> saveUserData(String email, String password, String name);
   Future<Map<String, String>?> getUserData();
+  
+  // Add these method signatures
+  Future<String?> getUserEmail(); 
+  Future<String?> getUserName();  
+  Future<String?> getUserPassword(); 
 }
 
 class LocalStorageServiceImpl extends LocalStorageService {
@@ -22,8 +27,31 @@ class LocalStorageServiceImpl extends LocalStorageService {
     final name = prefs.getString('name');
 
     if (email != null && password != null) {
-      return {'email': email, 'password': password, 'name': name ?? ''};
+      return {
+        'email': email,
+        'password': password,
+        'name': name ?? '',
+      };
     }
     return null;
+  }
+
+  // Implement the new methods
+  @override
+  Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('email');
+  }
+
+  @override
+  Future<String?> getUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('name');
+  }
+
+  @override
+  Future<String?> getUserPassword() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('password');
   }
 }
