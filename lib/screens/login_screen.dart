@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../services/local_storage_service.dart'; 
 import '../app_colors.dart'; 
 import 'registration_screen.dart'; 
@@ -65,11 +67,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final email = _emailController.text;
     final password = _passwordController.text;
-    final userData = await _localStorageService.getUserData();
 
-    if (userData != null &&
-        userData['email'] == email &&
-        userData['password'] == password) {
+    final response = await _authenticateUser(email, password);
+
+    if (response != null && response['success'] == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', email);
+
       _showNotificationDialog('Login successful');
       Navigator.pushReplacement(
         context,
@@ -77,6 +81,44 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       _showNotificationDialog('Invalid email or password');
+    }
+  }
+
+  Future<Map<String, dynamic>?> _authenticateUser(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://run.mocky.io/v3/21523da3-b753-4e3e-b760-d47915ce742b'),
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        // Перевірка наявності користувача
+        if (responseBody['users'] != null) {
+          // Пошук користувача з відповідним email
+          final user = responseBody['users'].firstWhere(
+            (user) => user['email'] == email && user['password'] == password,
+            orElse: () => null,
+          );
+
+          if (user != null) {
+            return {'success': true};  // Якщо користувач знайдений
+          }
+        }
+        return {'success': false};  // Користувач не знайдений
+      } else {
+        print('Failed to authenticate user');
+        return null;
+      }
+    } catch (e) {
+      print('Error during authentication: $e');
+      return null;
     }
   }
 
@@ -98,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
               await prefs.remove('password');
               await prefs.remove('name');
 
-              Navigator.of(context).pop(); 
+              Navigator.of(context).pop();
             },
             child: Text('Logout'),
           ),

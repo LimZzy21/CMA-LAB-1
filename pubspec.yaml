@@ -14,7 +14,13 @@ dependencies:
   connectivity_plus: ^4.0.0
   shared_preferences: ^2.0.17
   cupertino_icons: ^1.0.8
-
+  firebase_core: ^3.8.0 # Остання версія
+  firebase_auth: ^5.3.3   # Для аутентифікації
+  cloud_firestore: ^5.5.0  # Для бази даних
+  firebase_auth_web: ^5.13.4
+  json_api: ^8.1.0
+  http: ^1.2.2
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
