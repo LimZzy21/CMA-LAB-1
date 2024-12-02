@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_textfield.dart';
-import '../services/local_storage_service.dart'; // Correct import path
-import 'registration_screen.dart';
-import 'categories_screen.dart'; // Import for navigating to categories screen
-import '../app_colors.dart'; // Import your colors
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/local_storage_service.dart'; 
+import '../app_colors.dart'; 
+import 'registration_screen.dart'; 
+import 'categories_screen.dart'; 
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,89 +12,140 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Form key for validation
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final LocalStorageService _localStorageService = LocalStorageServiceImpl(); // Use implementation
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final LocalStorageService _localStorageService = LocalStorageServiceImpl();
 
-  Future<void> _loginUser() async {
-    if (_formKey.currentState!.validate()) {
-      final userData = await _localStorageService.getUserData(); // Asynchronous data retrieval
-      if (userData != null &&
-          userData['email'] == _emailController.text &&
-          userData['password'] == _passwordController.text) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => CategoriesScreen()), // Navigate to CategoriesScreen
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Неправильний email або пароль')),
-        );
-      }
+  @override
+  void initState() {
+    super.initState();
+    _checkAutoLogin();
+  }
+
+  Future<void> _checkAutoLogin() async {
+    final userData = await _localStorageService.getUserData();
+
+    if (userData != null && await _isConnected()) {
+      _showNotificationDialog('Auto-login succeeded.');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => CategoriesScreen()),
+      );
+    } else if (userData != null) {
+      _showNotificationDialog('Please connect to the network for auto-login.');
     }
+  }
+
+  Future<bool> _isConnected() async {
+    var connectivityResult = await (Connectivity().checkConnectivity());
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  void _showNotificationDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Notification'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _login() async {
+    if (!await _isConnected()) {
+      _showNotificationDialog('No internet connection. Please try again.');
+      return;
+    }
+
+    final email = _emailController.text;
+    final password = _passwordController.text;
+    final userData = await _localStorageService.getUserData();
+
+    if (userData != null &&
+        userData['email'] == email &&
+        userData['password'] == password) {
+      _showNotificationDialog('Login successful');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => CategoriesScreen()),
+      );
+    } else {
+      _showNotificationDialog('Invalid email or password');
+    }
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('email');
+              await prefs.remove('password');
+              await prefs.remove('name');
+
+              Navigator.of(context).pop(); 
+            },
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login', style: TextStyle(color: AppColors.whiteColor)), // Set AppBar text color
-        backgroundColor: AppColors.primaryColor, // Set AppBar background color
+        title: Text('Login', style: TextStyle(color: AppColors.whiteColor)),
+        backgroundColor: AppColors.primaryColor,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => RegistrationScreen()),
+              );
+            },
+            child: Text('Register', style: TextStyle(color: AppColors.whiteColor)),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey, // Form key for validation
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CustomTextField(
-                labelText: 'Email',
-                controller: _emailController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Будь ласка, введіть email';
-                  }
-                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                    return 'Введіть коректний email';
-                  }
-                  return null;
-                },
-              ),
-              CustomTextField(
-                labelText: 'Пароль',
-                obscureText: true,
-                controller: _passwordController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Будь ласка, введіть пароль';
-                  }
-                  if (value.length < 8) {
-                    return 'Пароль має містити не менше 8 символів';
-                  }
-                  return null;
-                },
-              ),
-              CustomButton(
-                text: 'Login',
-                onPressed: _loginUser, // Call asynchronous function
-                backgroundColor: AppColors.primaryColor, // Set button background color
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RegistrationScreen()),
-                  );
-                },
-                child: Text('Не маєте аккаунта? Зареєструйтесь'),
-              ),
-            ],
-          ),
+        child: Column(
+          children: [
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _login,
+              child: Text('Login'),
+            ),
+          ],
         ),
       ),
-      backgroundColor: AppColors.backgroundColor, // Use background color
     );
   }
 }

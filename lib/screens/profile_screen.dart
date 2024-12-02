@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../app_colors.dart'; // Import your colors
+import '../app_colors.dart'; 
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -30,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await prefs.setString('email', _emailController.text);
     await prefs.setString('name', _nameController.text);
     await prefs.setString('password', _passwordController.text);
-    // Show confirmation message
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Profile updated successfully')),
     );
@@ -40,8 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(color: AppColors.whiteColor)), // Set header text color
-        backgroundColor: AppColors.primaryColor, // Set AppBar color
+        title: const Text('Profile', style: TextStyle(color: AppColors.whiteColor)),
+        backgroundColor: AppColors.primaryColor, 
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -63,15 +63,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveUserData,
-              child: Text('Save Changes', style: TextStyle(color: AppColors.whiteColor)), // Set button text color
+              child: Text('Save Changes', style: TextStyle(color: AppColors.whiteColor)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor, // Use background color for the button
+                backgroundColor: AppColors.primaryColor,
               ),
             ),
           ],
         ),
       ),
-      backgroundColor: AppColors.backgroundColor, // Use background color
+      backgroundColor: AppColors.backgroundColor,
     );
   }
 }

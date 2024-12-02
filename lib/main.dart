@@ -12,7 +12,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+
       title: 'Flutter Lab 2',
+
       theme: ThemeData(
         primaryColor: AppColors.primaryColor,
         colorScheme: ColorScheme.fromSwatch().copyWith(
